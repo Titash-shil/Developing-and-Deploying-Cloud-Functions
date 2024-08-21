@@ -9,10 +9,11 @@ export REGION=
 ```
 ```
 
-echo "${BG_MAGENTA}${BOLD}Starting Execution${RESET}"
+gcloud auth list
 
 export PROJECT_ID=$(gcloud config get-value project)
 export PROJECT_ID=$DEVSHELL_PROJECT_ID
+
 
 export PROJECT_NUMBER=$(gcloud projects describe $DEVSHELL_PROJECT_ID --format='value(projectNumber)')
 gcloud config set project $DEVSHELL_PROJECT_ID
@@ -27,7 +28,8 @@ gcloud services enable \
   storage.googleapis.com \
   pubsub.googleapis.com
 
-sleep 20
+
+sleep 30
 
 mkdir techcps && cd techcps
 
@@ -54,6 +56,8 @@ functions.http('convertTemp', (req, res) => {
 });
 EOF_END
 
+
+
 cat > package.json <<EOF_CP
 {
   "dependencies": {
@@ -61,6 +65,8 @@ cat > package.json <<EOF_CP
   }
 }
 EOF_CP
+
+
 
 deploy_function() {
 gcloud functions deploy temperature-converter \
@@ -79,29 +85,34 @@ deploy_success=false
 
 while [ "$deploy_success" = false ]; do
     if deploy_function; then
-        echo "Function deployed successfully..."
+        echo "Function deployed successfully."
         deploy_success=true
     else
-        echo "Retrying in 10 seconds..."
-        sleep 15
+        echo "Retrying in 10 seconds, Please subscribe to techcps:(https://www.youtube.com/@techcps)"
+        sleep 10
     fi
 done
 
+
 FUNCTION_URI=$(gcloud functions describe temperature-converter --gen2 --region $REGION --format "value(serviceConfig.uri)"); echo $FUNCTION_URI
+
 
 curl -H "Authorization: bearer $(gcloud auth print-identity-token)" "${FUNCTION_URI}?temp=70"
 
 curl -H "Authorization: bearer $(gcloud auth print-identity-token)" "${FUNCTION_URI}?temp=21.11&convert=ctof"
 
+
 SERVICE_ACCOUNT=$(gcloud storage service-agent)
 
 gcloud projects add-iam-policy-binding $PROJECT_ID --member serviceAccount:$SERVICE_ACCOUNT --role roles/pubsub.publisher
+
 
 gcloud storage cp gs://cloud-training/CBL491/data/average-temps.csv .
 
 mkdir ~/temp-data-checker && cd $_
 
 touch index.js && touch package.json
+
 
 cat > index.js <<EOF_CP
 const functions = require('@google-cloud/functions-framework');
@@ -119,6 +130,7 @@ functions.cloudEvent('checkTempData', cloudEvent => {
 })
 EOF_CP
 
+
 cat > package.json <<EOF_CP
 {
   "name": "temperature-data-checker",
@@ -130,9 +142,13 @@ cat > package.json <<EOF_CP
 }
 EOF_CP
 
+
 BUCKET="gs://gcf-temperature-data-$PROJECT_ID"
 
+
 gsutil mb -l $REGION $BUCKET
+
+#!/bin/bash
 
 deploy_function() {
 gcloud functions deploy temperature-data-checker \
@@ -150,20 +166,24 @@ deploy_success=false
 
 while [ "$deploy_success" = false ]; do
     if deploy_function; then
-        echo "Function deployed successfully..."
+        echo "Function deployed successfully."
         deploy_success=true
     else
-        echo "Retrying in 15 seconds..."
-        sleep 15
+        echo "Retrying in 10 seconds, Please subscribe to techcps:(https://www.youtube.com/@techcps)"
+        sleep 10
     fi
 done
+
+
 
 cd ~
 gsutil cp gs://cloud-training/CBL491/data/average-temps.csv .
 gsutil cp ~/average-temps.csv $BUCKET/average-temps.csv
 
+
 gcloud functions logs read temperature-data-checker \
  --region $REGION --gen2 --limit=100 --format "value(log)"
+
 
 mkdir ~/temp-data-converter && cd $_
 
@@ -242,6 +262,7 @@ describe('functions_convert_temperature_http', () => {
 });
 EOF_CP
 
+
 cat > package.json <<EOF_CP
 {
   "name": "temperature-converter",
@@ -261,7 +282,11 @@ cat > package.json <<EOF_CP
 }
 EOF_CP
 
+
+
+
 mkdir tests && touch tests/unit.http.test.js
+
 
 cat > tests/unit.http.test.js <<EOF_CP
 const {getFunction} = require('@google-cloud/functions-framework/testing');
@@ -334,9 +359,12 @@ describe('functions_convert_temperature_http', () => {
 });
 EOF_CP
 
+
+
 npm install
 
 npm test
+
 
 deploy_function() {
 gcloud run deploy temperature-converter \
@@ -352,15 +380,17 @@ deploy_success=false
 
 while [ "$deploy_success" = false ]; do
     if deploy_function; then
-        echo "Function deployed successfully..."
+        echo "Function deployed successfully."
         deploy_success=true
     else
-        echo "Retrying in 15 seconds..."
-        sleep 15
+        echo "Retrying in 10 seconds, Please subscribe to techcps:(https://www.youtube.com/@techcps)"
+        sleep 10
     fi
 done
 
+
 curl -H "Authorization: bearer $(gcloud auth print-identity-token)" "${FUNCTION_URI}?temp=21.11"
+
 
 ```
 
